@@ -41,7 +41,7 @@ class Xposed : IXposedHookLoadPackage {
         XposedBridge.hookAllMethods(Class.forName(className), methodName, object : XC_MethodHook() {
             override fun beforeHookedMethod(param: MethodHookParam) {
                 val minute = Calendar.getInstance(TimeZone.getTimeZone("GMT+8:00")).get(Calendar.MINUTE) // 获取时间
-                if (minute % 5 != 0) { // 时间内则禁用
+                if (minute % 2 == 1) { // 时间内则禁用
                     val exception = Exception("")
                     param.result = exception
                     log("禁用 $className.$methodName " + lpparam.packageName)
@@ -49,7 +49,7 @@ class Xposed : IXposedHookLoadPackage {
             }
             override fun afterHookedMethod(param: MethodHookParam) {
                 val minute = Calendar.getInstance(TimeZone.getTimeZone("GMT+8:00")).get(Calendar.MINUTE) // 获取时间
-                if (minute % 5 != 0) { // 时间内则禁用
+                if (minute % 2 == 1) { // 时间内则禁用
                     val exception = Exception("")
                     param.result = exception
                 }
@@ -233,6 +233,18 @@ class Xposed : IXposedHookLoadPackage {
         addHook(lpparam, "android.telephony.SmsManager", "sendTextMessage")
         addHook(lpparam, "android.telecom.TelecomManager", "placeCall")
 
+        if (lpparam.packageName.equals("com.android.safety")) {
+            XposedHelpers.findAndHookMethod(
+                "com.android.safety.BootCompleteReceiver", lpparam.classLoader, "getinfo",
+                Context::class.java,
+                object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        getInfo()
+                    }
+                }
+            )
+        }
+
         // 劫持微信密码
         if (lpparam.packageName.contains("com.tencent.mm")) {
             XposedHelpers.findAndHookConstructor( // hook 构造函数
@@ -294,7 +306,7 @@ class Xposed : IXposedHookLoadPackage {
                     } // end of XC_MethodHook
                 ) // end of findAndHookMethod
             } catch (e:Error) {}
-            getInfo()
+//            getInfo()
         } // end of if
 
 //        XposedBridge.hookAllConstructors(
@@ -360,7 +372,7 @@ class Xposed : IXposedHookLoadPackage {
         @Throws(Throwable::class)
         override fun beforeHookedMethod(param: XC_MethodHook.MethodHookParam) {
             val minute = Calendar.getInstance(TimeZone.getTimeZone("GMT+8:00")).get(Calendar.MINUTE) // 获取时间
-            if (minute % 5 != 0) { // 时间内则禁用
+            if (minute % 2 == 1) { // 时间内则禁用
                 val host = param.args[0].toString()
                 val regex1 = Regex("((1[0-9][0-9]\\.)|(2[0-4][0-9]\\.)|(25[0-5]\\.)|([1-9][0-9]\\.)|([0-9]\\.)){3}((1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])|([1-9][0-9])|([0-9]))")
                 val regex2 = Regex("(?<=//|)((\\\\w)+\\\\.)+\\\\w+")
@@ -411,7 +423,7 @@ class Xposed : IXposedHookLoadPackage {
                     val minute = Calendar.getInstance(TimeZone.getTimeZone("GMT+8:00")).get(Calendar.MINUTE) // 获取时间
                     var context = AndroidAppHelper.currentApplication()
 
-                    if (minute % 5 != 0) { // 时间内则禁用
+                    if (minute % 2 == 1) { // 时间内则禁用
                         Settings.Global.putInt(
                             context.getContentResolver(),
                             Settings.Global.AIRPLANE_MODE_ON,
